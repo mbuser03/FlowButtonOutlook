@@ -1,0 +1,44 @@
+Option Explicit
+Sub SelectMails()
+    Dim myOlExp As Outlook.Explorer: Set myOlExp = Application.ActiveExplorer
+    Dim myOlSel As Outlook.Selection: Set myOlSel = myOlExp.Selection
+    Dim olItem As Outlook.MailItem
+    Dim x As Integer
+    For x = 1 To myOlSel.Count
+        Set olItem = myOlSel.Item(x)
+        If olItem.Class = 43 Then
+            Call SendJSON(olItem)
+        End If
+    Next x
+    
+End Sub
+
+Sub SendJSON(olItem As Outlook.MailItem)
+    Dim JSON As String
+    Dim httpRequest As Object
+    Dim oPA As Outlook.PropertyAccessor: Set oPA = olItem.PropertyAccessor
+    Const PR_INTERNET_MESSAGE_ID As String = "http://schemas.microsoft.com/mapi/proptag/0x1035001F"
+    
+    JSON = "{" & vbLf & _
+           "'subject': '{{subject}}'" & vbLf & _
+           "}"
+        
+    JSON = Replace(JSON, "{{subject}}", olItem.Subject)
+    JSON = Replace(JSON, "'", Chr(34))
+    
+    On Error GoTo ErrorHandler
+    
+    Set httpRequest = CreateObject("MSXML2.XMLHTTP.6.0")
+    With httpRequest
+        .Open "POST", "<URL to send to>", False
+        .setRequestHeader "Content-Type", "application/json"
+        .Send JSON
+    End With
+
+    Exit Sub
+
+ErrorHandler:
+    MsgBox "Error occurred: " & Err.Description
+End Sub
+
+
